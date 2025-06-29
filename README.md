@@ -1,6 +1,4 @@
 
-
-readme_content = """
 # WildFish Image Classification using ConvNeXt Tiny
 
 This project is part of the KD34403 Applied AI Prototype Assignment. It aims to build an AI model that can classify different fish species based on uploaded images using transfer learning with a pretrained ConvNeXt Tiny model. The system is designed for aquaculture applications to assist in fish species identification and monitoring.
