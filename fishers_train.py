@@ -6,6 +6,8 @@ import random
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
+import matplotlib.pyplot as plt
+import seaborn as sns
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader, random_split
 from torchvision.models import convnext_tiny, ConvNeXt_Tiny_Weights
@@ -46,7 +48,7 @@ print(f"[INFO] Saved class mapping to {class_map_path}")
 total_len = len(full_dataset)
 train_len = int(0.7 * total_len)
 val_len = int(0.2 * total_len)
-test_len = total_len - train_len - val_len  # ensure total adds up
+test_len = total_len - train_len - val_len
 train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_len, val_len, test_len])
 print(f"[INFO] Dataset split — Train: {train_len}, Val: {val_len}, Test: {test_len}")
 
@@ -112,7 +114,7 @@ for epoch in range(num_epochs):
           f"Val Acc: {val_acc:.2f}% | "
           f"Time: {duration:.1f}s")
 
-# === Final Test Evaluation ===
+# === Final Test Evaluation with Confusion Matrix ===
 def test_metrics(model, loader, class_names):
     model.eval()
     all_preds = []
@@ -126,22 +128,44 @@ def test_metrics(model, loader, class_names):
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.numpy())
 
-    print("\n Classification Report:")
-    print(classification_report(all_labels, all_preds, target_names=class_names, digits=2))
+    # === Fix mismatch error ===
+    unique_labels = sorted(list(set(all_labels)))
+    filtered_class_names = [class_names[i] for i in unique_labels]
 
-    cm = confusion_matrix(all_labels, all_preds)
-    print("\n Confusion Matrix (rows=actual, columns=predicted):")
+    print("\nClassification Report:")
+    print(classification_report(
+        all_labels,
+        all_preds,
+        labels=unique_labels,
+        target_names=filtered_class_names,
+        digits=2
+    ))
+
+    # === Confusion Matrix ===
+    cm = confusion_matrix(all_labels, all_preds, labels=unique_labels)
+    print("\nConfusion Matrix (rows = actual, columns = predicted):")
     print(cm)
 
     print("\nClass Index Mapping:")
-    for i, name in enumerate(class_names):
-        print(f"{i}: {name}")
+    for i in unique_labels:
+        print(f"{i}: {class_names[i]}")
 
-# === Run Final Evaluation
+    # === Plot Confusion Matrix ===
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                xticklabels=filtered_class_names, yticklabels=filtered_class_names)
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.title("Confusion Matrix - WildFish Classification")
+    plt.tight_layout()
+    plt.show()
+
+# === Run Final Evaluation ===
 test_loss, test_acc = evaluate(model, test_loader)
-print(f"\n🧪 FINAL TEST RESULTS — Loss: {test_loss:.4f} | Accuracy: {test_acc:.2f}% on {len(test_dataset)} images")
+print(f"\nFINAL TEST RESULTS — Loss: {test_loss:.4f} | Accuracy: {test_acc:.2f}% on {len(test_dataset)} images")
+
 test_metrics(model, test_loader, class_names)
 
 # === Save Model ===
 torch.save(model.state_dict(), model_path)
-print(f"Model saved to {model_path}")
+print(f"[INFO] Model saved to {model_path}")
