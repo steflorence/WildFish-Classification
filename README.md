@@ -1,4 +1,4 @@
-# Create a complete README.md file with content tailored to Stef's WildFish classification project
+
 
 readme_content = """
 # WildFish Image Classification using ConvNeXt Tiny
